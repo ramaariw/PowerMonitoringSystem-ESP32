@@ -1,0 +1,304 @@
+[
+    {
+        "id": "d199be2a42f13f6b",
+        "type": "tab",
+        "label": "Power Monitoring System",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "f23bf126451cf9a0",
+        "type": "mqtt in",
+        "z": "d199be2a42f13f6b",
+        "name": "",
+        "topic": "esp32rm/sensor",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "3614c8f9a2228030",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 120,
+        "y": 320,
+        "wires": [
+            [
+                "4e9845bbb4240a82"
+            ]
+        ]
+    },
+    {
+        "id": "4e9845bbb4240a82",
+        "type": "function",
+        "z": "d199be2a42f13f6b",
+        "name": "function 1",
+        "func": "let parts = msg.payload.split(\",\");\n\nmsg.payload = {\n    voltageAC: parseFloat(parts[0]),\n    currentAC: parseFloat(parts[1]),\n    powerAC: parseFloat(parts[2]),\n    energyAC: parseFloat(parts[3]),\n    voltageDC: parseFloat(parts[4]),\n    persenBatt: parseFloat(parts[5]),\n};\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 320,
+        "y": 320,
+        "wires": [
+            [
+                "b34c645dce87d61f",
+                "5897f50df54895c4"
+            ]
+        ]
+    },
+    {
+        "id": "ddac88d978165e2d",
+        "type": "mqtt out",
+        "z": "d199be2a42f13f6b",
+        "name": "",
+        "topic": "esp32rm/relay",
+        "qos": "0",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "3614c8f9a2228030",
+        "x": 560,
+        "y": 540,
+        "wires": []
+    },
+    {
+        "id": "810d2d19128101d2",
+        "type": "ui_switch",
+        "z": "d199be2a42f13f6b",
+        "name": "",
+        "label": "Switch 1",
+        "tooltip": "",
+        "group": "4fd7ea995d1d7535",
+        "order": 6,
+        "width": "3",
+        "height": "1",
+        "passthru": true,
+        "decouple": "false",
+        "topic": "topic",
+        "topicType": "msg",
+        "style": "",
+        "onvalue": "RELAY1_ON",
+        "onvalueType": "str",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "RELAY1_OFF",
+        "offvalueType": "str",
+        "officon": "",
+        "offcolor": "",
+        "animate": false,
+        "className": "",
+        "x": 340,
+        "y": 500,
+        "wires": [
+            [
+                "ddac88d978165e2d"
+            ]
+        ]
+    },
+    {
+        "id": "b360af4395cb37a4",
+        "type": "ui_switch",
+        "z": "d199be2a42f13f6b",
+        "name": "",
+        "label": "Switch 2",
+        "tooltip": "",
+        "group": "4fd7ea995d1d7535",
+        "order": 7,
+        "width": "3",
+        "height": "1",
+        "passthru": true,
+        "decouple": "false",
+        "topic": "topic",
+        "topicType": "msg",
+        "style": "",
+        "onvalue": "RELAY2_ON",
+        "onvalueType": "str",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "RELAY2_OFF",
+        "offvalueType": "str",
+        "officon": "",
+        "offcolor": "",
+        "animate": false,
+        "className": "",
+        "x": 340,
+        "y": 560,
+        "wires": [
+            [
+                "ddac88d978165e2d"
+            ]
+        ]
+    },
+    {
+        "id": "b34c645dce87d61f",
+        "type": "ui_template",
+        "z": "d199be2a42f13f6b",
+        "group": "4fd7ea995d1d7535",
+        "name": "",
+        "order": 8,
+        "width": 0,
+        "height": 0,
+        "format": "<style>\n  .modern-card {\n      background: #1e1e1e;\n      padding: 15px;\n      border-radius: 10px;\n      box-shadow: 0 0 20px rgba(0,0,0,0.3);\n      color: #fff;\n      font-family: \"Segoe UI\", sans-serif;\n      margin-bottom: 15px;\n  }\n\n  .modern-title {\n      font-size: 18px;\n      font-weight: 600;\n      margin-bottom: 10px;\n      color: #4da6ff;\n  }\n\n  .modern-grid {\n      display: grid;\n      grid-template-columns: 1fr 1fr;\n      gap: 10px;\n      font-size: 16px;\n  }\n\n  .item-label {\n      opacity: 0.7;\n  }\n\n  .item-value {\n      font-size: 20px;\n      font-weight: bold;\n      text-align: right;\n  }\n\n  .battery-bar {\n      width: 100%;\n      height: 12px;\n      background: #333;\n      border-radius: 10px;\n      overflow: hidden;\n      margin-top: 5px;\n  }\n\n  .battery-fill {\n      height: 100%;\n      width: 0%;\n      transition: width 0.5s ease, background 0.5s ease;\n  }\n</style>\n\n<script>\n(function(scope) {\n    scope.$watch('msg', function(msg) {\n        if (!msg || !msg.payload) return;\n\n        let val = msg.payload.persenBatt;\n        let bar = document.getElementById(\"batteryFill\");\n\n        if (!bar) return;\n\n        // Width 0–100%\n        bar.style.width = val + \"%\";\n\n        // Warna berdasarkan level baterai\n        if (val < 20) {\n            bar.style.background = \"#ff3b30\";   // merah\n        } else if (val < 50) {\n            bar.style.background = \"#ffcc00\";   // kuning\n        } else {\n            bar.style.background = \"#4cff4c\";   // hijau\n        }\n    });\n})(scope);\n</script>\n\n<div class=\"modern-card\">\n    <div class=\"modern-title\">Power Monitoring</div>\n\n    <div class=\"modern-grid\">\n        <div class=\"item-label\">Voltage AC</div>\n        <div class=\"item-value\">{{msg.payload.voltageAC}} V</div>\n\n        <div class=\"item-label\">Current AC</div>\n        <div class=\"item-value\">{{msg.payload.currentAC}} A</div>\n\n        <div class=\"item-label\">Power AC</div>\n        <div class=\"item-value\">{{msg.payload.powerAC}} W</div>\n\n        <div class=\"item-label\">Energy</div>\n        <div class=\"item-value\">{{msg.payload.energyAC}} Wh</div>\n\n        <div class=\"item-label\">Voltage DC</div>\n        <div class=\"item-value\">{{msg.payload.voltageDC}} V</div>\n\n        <div class=\"item-label\">Battery</div>\n        <div class=\"item-value\">{{msg.payload.persenBatt}}%</div>\n    </div>\n\n    <div class=\"battery-bar\">\n        <div id=\"batteryFill\" class=\"battery-fill\"></div>\n    </div>\n</div>\n\n<audio id=\"lowBatterySound\" src=\"/sounds/Rusdi4K.mp3\"></audio>\n\n<script>\n(function(scope) {\n    scope.$watch('msg', function(msg) {\n        if (!msg || !msg.payload) return;\n\n        let vdc = msg.payload.voltageDC;\n\n        // Play custom sound if VDC <= 11\n        if (vdc <= 11) {\n            let audio = document.getElementById(\"lowBatterySound\");\n            if (audio) {\n                audio.volume = 1.0;  // Volume 1 = maksimal\n                audio.play();\n            }\n        }\n    });\n})(scope);\n</script>\n\n",
+        "storeOutMessages": true,
+        "fwdInMessages": true,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 540,
+        "y": 320,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "5897f50df54895c4",
+        "type": "function",
+        "z": "d199be2a42f13f6b",
+        "name": "function 2",
+        "func": "let vdc = msg.payload.voltageDC;\n\nif (vdc <= 11) {\n    msg.payload = {\n        chatId: \"7663318404\",  // ganti ke chat_id lu\n        type: \"message\",\n        content: `⚠️ COK UDAH COK GC CABUT Voltage DC turun ke ${vdc} V`\n    };\n    return msg;\n}\nreturn null;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 340,
+        "y": 420,
+        "wires": [
+            [
+                "31a56efa08bc96ab"
+            ]
+        ]
+    },
+    {
+        "id": "9564f6aa6fe91532",
+        "type": "inject",
+        "z": "d199be2a42f13f6b",
+        "name": "",
+        "props": [
+            {
+                "p": "payload.voltageDC",
+                "v": "10",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "1",
+        "topic": "",
+        "x": 110,
+        "y": 380,
+        "wires": [
+            [
+                "5897f50df54895c4"
+            ]
+        ]
+    },
+    {
+        "id": "31a56efa08bc96ab",
+        "type": "telegram sender",
+        "z": "d199be2a42f13f6b",
+        "name": "",
+        "bot": "84962c4642bd8c73",
+        "haserroroutput": false,
+        "outputs": 1,
+        "x": 530,
+        "y": 440,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "3614c8f9a2228030",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "broker.hivemq.com",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "4fd7ea995d1d7535",
+        "type": "ui_group",
+        "name": "Power Monitoring System",
+        "tab": "4bd3d06f1169cb0f",
+        "order": 1,
+        "disp": true,
+        "width": 6,
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "84962c4642bd8c73",
+        "type": "telegram bot",
+        "botname": "Nyarvis_Bot",
+        "usernames": "Ame",
+        "chatids": "7663318404",
+        "baseapiurl": "",
+        "testenvironment": false,
+        "updatemode": "polling",
+        "pollinterval": 300,
+        "usesocks": false,
+        "sockshost": "",
+        "socksprotocol": "socks5",
+        "socksport": 6667,
+        "socksusername": "anonymous",
+        "sockspassword": "",
+        "bothost": "",
+        "botpath": "",
+        "localbothost": "0.0.0.0",
+        "localbotport": 8443,
+        "publicbotport": 8443,
+        "privatekey": "",
+        "certificate": "",
+        "useselfsignedcertificate": false,
+        "sslterminated": false,
+        "verboselogging": false
+    },
+    {
+        "id": "4bd3d06f1169cb0f",
+        "type": "ui_tab",
+        "name": "Home",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "75c22e59dd220b3e",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-dashboard": "3.6.6",
+            "node-red-contrib-telegrambot": "17.0.3"
+        }
+    }
+]
