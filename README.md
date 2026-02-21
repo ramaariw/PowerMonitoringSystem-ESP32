@@ -1,34 +1,54 @@
-# PowerMonitoringSystem
-This project is a complete IoT power monitoring and control system built with ESP32, PZEM-004T, DC Voltage Sensor, and 2-channel Relay Module, integrated with MQTT for real-time data communication.  The system measures AC &amp; DC parameters and allows remote relay control via an MQTT dashboard (Node-RED / mobile app).
+# ⚡ Power Monitoring System (IoT)
 
-Features :
-- Real-time AC Voltage Monitoring (PZEM-004T)
-- Real-time AC Current Monitoring
-- DC Voltage Sensor Integration
-- MQTT Telemetry (publish sensor data)
-- MQTT Control (subscribe relay commands)
-- Auto-Reconnect WiFi & MQTT
-- Node-RED Dashboard ready
+[![Framework](https://img.shields.io/badge/Framework-Arduino_IDE-00979D?style=flat&logo=arduino&logoColor=white)](https://www.arduino.cc/)
+[![Hardware](https://img.shields.io/badge/Hardware-ESP32-E67E22?style=flat&logo=espressif&logoColor=white)](https://www.espressif.com/)
+[![Protocol](https://img.shields.io/badge/Protocol-MQTT-3C5280?style=flat&logo=mqtt&logoColor=white)](https://mqtt.org/)
 
-Hardware Components :
-Below is the complete hardware list used in this Power Monitoring & Control System project, including the core IoT components and all supporting modules integrated inside the device.
-                                                                   //Description :
-- ESP32 DevKit v1	Main controller                                  Main Controller
-- PZEM-004T v3.0	AC voltage & current sensor                      AC Voltage & Current Sensor
-- DC Voltage Sensor	Up to 25V measurement                          DC Voltage Sensor
-- Relay Module 2-Channel	Remote switch control                    Remote Switch Control    
-- Wiring	Jumpers                                                  Internal wiring for sensor and module connections
-- LM2596 Buck Converter (Step-Down)                                Used to step down various input power sources (e.g., 9V, 12V, 24V) to a stable 5V output.
-                                                                   Ensures the entire PMS device can accept flexible adapter inputs safely.
-- DC Barrel Jack Connector 3.5                                     Standard DC connector used as the main power input for the system. Allows the device to be                                                                          powered using any DC wall adapter.
-- Terminal Block Connectors                                        Provides secure and organized wiring for all high and low voltage lines:
-                                                                   * DC + / – input and output
-                                                                   * AC L & N for PZEM-004T measurement input
-                                                                   * AC L & N output for load after relay switching
-- 5V Mini Cooling Fan                                              Mounted on the enclosure to exhaust hot air.
-- LCD 16×2 (I2C Interface)                                         Displays real-time measurement
-- Push Button (Mode Selector)                                      Used to switch LCD display modes:
-                                                                   * AC Monitoring Mode
-                                                                   * DC Monitoring Mode
+A complete **IoT Power Monitoring & Control System**. This project measures AC/DC parameters and enables remote relay control via MQTT dashboards (Node-RED/Mobile App).
 
+---
 
+## 🚀 Features
+- **Dual Monitoring:** Real-time AC (Voltage/Current) via PZEM-004T & DC Voltage monitoring.
+- **Remote Control:** 2-channel relay control via MQTT subscription.
+- **Smart Connectivity:** Auto-reconnect system for WiFi and MQTT broker.
+- **Local Display:** LCD 16x2 with a mode selector button to switch between AC/DC data.
+- **Dashboard Ready:** Integrated seamlessly with Node-RED for visualization.
+
+---
+
+## 🛠️ Hardware Components
+
+| Component | Function |
+| :--- | :--- |
+| **ESP32 DevKit v1** | Main MCU & Gateway IoT |
+| **PZEM-004T v3.0** | AC Voltage & Current Sensor |
+| **DC Voltage Sensor** | Up to 25V measurement |
+| **Relay 2-Channel** | Remote switch for AC/DC loads |
+| **LCD 16x2 (I2C)** | Visualizing data without a dashboard |
+| **LM2596 Buck Converter** | Voltage regulator for stable 5V input |
+| **5V Mini Cooling Fan** | Thermal management for the enclosure |
+
+> **Note:** The system uses a DC Barrel Jack for flexible power input and Terminal Blocks for secure high-voltage wiring.
+
+---
+
+## 🔌 System Architecture
+1. **Sensing:** ESP32 reads data from PZEM-004T (AC) and Analog Pins (DC).
+2. **Processing:** Data is formatted into JSON/Strings.
+3. **Communication:** ESP32 publishes data to the MQTT Broker via WiFi.
+4. **Action:** Node-RED subscribes to telemetry and publishes commands to control the relays.
+
+---
+
+## 📸 Demo & Screenshots
+*(Saran: Upload foto alat lo atau screenshot dashboard Node-RED lo di sini!)*
+`![Dashboard Demo](link_ke_gambar_lo_disini)`
+
+---
+
+## ⚙️ Installation & Setup
+1. Clone this repository.
+2. Install libraries: `PubSubClient`, `PZEM004Tv30`, `LiquidCrystal_I2C`.
+3. Input your WiFi and MQTT credentials in the code.
+4. Upload to ESP32.
