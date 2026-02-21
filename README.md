@@ -42,8 +42,7 @@ A complete **IoT Power Monitoring & Control System**. This project measures AC/D
 ---
 
 ## 📸 Demo & Screenshots
-*(Saran: Upload foto alat lo atau screenshot dashboard Node-RED lo di sini!)*
-`![Dashboard Demo](link_ke_gambar_lo_disini)`
+![Dashboard Demo](assets/nodered-dashboard.png)
 
 ---
 
@@ -52,3 +51,24 @@ A complete **IoT Power Monitoring & Control System**. This project measures AC/D
 2. Install libraries: `PubSubClient`, `PZEM004Tv30`, `LiquidCrystal_I2C`.
 3. Input your WiFi and MQTT credentials in the code.
 4. Upload to ESP32.
+
+---
+
+## Pinout Connection
+
+| Component | PIN ESP32 | Description
+| :--- | :--- | :--- |
+| **PZEM-004T v3.0** | RX (16), TX (17) | Serial Communication |
+| **DC Voltage Sensor** | GPIO 34 (Analog) | Voltage Divider Input |
+| **Relay CH1** | GPIO 25 | AC Load Control |
+| **Relay CH2** | GPIO 24 | AC Load Control |
+| **LCD 16x2 (I2C)** | SDA (21), SCL (22) | Data Display |
+| **Push Button** | GPIO 12 | Input Pullup |
+
+---
+
+Markdown
+### 🔧 Wiring Diagram
+![Wiring Diagram](assets/wiring-diagram.png)
+
+
