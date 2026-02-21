@@ -41,34 +41,59 @@ A complete **IoT Power Monitoring & Control System**. This project measures AC/D
 
 ---
 
+## 🔌 Wiring & Pinout
+
+### Wiring Diagram
+![Wiring Diagram](assets/wiring-diagram.png)
+
+### Pinout Mapping
+| Component Pin | ESP32 GPIO | Description |
+| :--- | :--- | :--- |
+| **PZEM TX / RX** | GPIO 16 / 17 | Serial2 Communication |
+| **LCD SDA / SCL** | GPIO 21 / 22 | I2C Communication |
+| **Relay 1 / 2** | GPIO 4 / 2 | Load Control (Output) |
+| **DC Sensor** | GPIO 34 | Analog Input (ADC) |
+| **Push Button** | GPIO 32 | Mode Switch (Input Pullup) |
+
+---
+
+## 📚 Library Dependencies
+Please install these libraries via Arduino Library Manager before uploading:
+
+* **PZEM-004T v3.0** (by Jakub Maziewski)
+* **PubSubClient** (by Nick O'Leary)
+* **LiquidCrystal I2C** (by Frank de Brabander)
+* **WiFi** (Built-in ESP32)
+* **Wire** (Built-in)
+
+---
+
+## ⚙️ Installation & Setup
+
+1. **Hardware:** Wire the components according to the `Wiring Diagram`.
+2. **Firmware:**
+   - Open `src/main.ino` in Arduino IDE.
+   - Change `ssid` and `password` to your WiFi credentials.
+   - Update `mqttServer` if using a private broker.
+   - Upload the code to your ESP32.
+3. **Dashboard:**
+   - Open Node-RED.
+   - Import `dashboard/flows.json`.
+   - Configure the MQTT In/Out nodes to match your broker.
+
+---
+
 ## 📸 Demo & Screenshots
 ![Dashboard Demo](assets/nodered-dashboard.png)
 
 ---
 
-## ⚙️ Installation & Setup
-1. Clone this repository.
-2. Install libraries: `PubSubClient`, `PZEM004Tv30`, `LiquidCrystal_I2C`.
-3. Input your WiFi and MQTT credentials in the code.
-4. Upload to ESP32.
+## ⚠️ Disclaimer
+This project involves **High Voltage AC**. Always ensure proper insulation and safety measures when wiring the PZEM-004T sensor and Relay modules.
 
 ---
+**Developed with ❤️ by [ramaariw]**
 
-## Pinout Connection
 
-| Component | PIN ESP32 | Description
-| :--- | :--- | :--- |
-| **PZEM-004T v3.0** | RX (16), TX (17) | Serial Communication |
-| **DC Voltage Sensor** | GPIO 34 (Analog) | Voltage Divider Input |
-| **Relay CH1** | GPIO 25 | AC Load Control |
-| **Relay CH2** | GPIO 24 | AC Load Control |
-| **LCD 16x2 (I2C)** | SDA (21), SCL (22) | Data Display |
-| **Push Button** | GPIO 12 | Input Pullup |
-
----
-
-Markdown
-### 🔧 Wiring Diagram
-![Wiring Diagram](assets/wiring-diagram.png)
 
 
