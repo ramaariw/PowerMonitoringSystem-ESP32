@@ -62,6 +62,12 @@ Manage the entire system using **just one button**.
 
 This project includes a Python-based local server to handle high-frequency data logging and visualization.
 
+Here is a screenshot of the pre-configured Grafana dashboard in action, showing real-time power metrics, battery status, and cost estimation.
+
+<p align="center">
+  <img src="images/grafana_dashboard.png" alt="PMS Grafana Dashboard Screenshot" width="800">
+</p>
+
 ### 1. Local Server (`server_bapuk.py`)
 A Flask-based gateway that receives data from ESP32 and performs:
 - **CSV Logging:** Saves all telemetry to `pms_data_log.csv`.
