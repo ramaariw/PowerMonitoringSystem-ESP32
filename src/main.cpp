@@ -7,8 +7,6 @@
 #include <LiquidCrystal_I2C.h>
 #include <time.h> 
 #include <ArduinoJson.h>
-
-#include "config.h" // Load credentials safely
 #include "koneksi.h"
 #include "lcd_display.h"
 #include "tombol.h"
