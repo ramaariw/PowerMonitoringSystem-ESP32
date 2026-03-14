@@ -8,11 +8,12 @@
 #include <time.h> 
 #include <ArduinoJson.h>
 
+#include "config.h" // Load credentials safely
 #include "koneksi.h"
 #include "lcd_display.h"
 #include "tombol.h"
 
-// --- Global Vars ---
+// --- Global Variables ---
 int displayMode = 0; 
 int menuIndex = 1;
 bool isMenuMode = false;
@@ -31,16 +32,16 @@ WiFiClientSecure espClient;
 PubSubClient client(espClient);
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
-// NTP Config
+// NTP Configuration
 const char* ntpServer = "pool.ntp.org";
-const long  gmtOffset_sec = 25200; 
+const long  gmtOffset_sec = 25200; // GMT+7
 const int   daylightOffset_sec = 0;
 
 unsigned long previousMillis = 0;
 float lastVoltageAC=0, lastCurrentAC=0, lastPowerAC=0, lastEnergyAC=0;
 float lastVoltageDC=0, PersenBaterai=0;
 
-// --- Fungsi Waktu & Uptime ---
+// --- Time & Uptime Helpers ---
 String getClock() {
     struct tm timeinfo;
     if(!getLocalTime(&timeinfo)) return "00:00:00";
@@ -69,7 +70,7 @@ String getUptime() {
     return String(buffer);
 }
 
-// --- Callback MQTT ---
+// --- MQTT Callback ---
 void callback(char* topic, byte* payload, unsigned int len) {
     String msg = "";
     for (int i = 0; i < len; i++) msg += (char)payload[i];
@@ -83,6 +84,7 @@ void callback(char* topic, byte* payload, unsigned int len) {
         digitalWrite(2, statusR2 ? LOW : HIGH);
     }
     
+    // Sync status back to dashboard
     if (client.connected()) {
         client.publish("esp32rm/r1/stat", statusR1 ? "ON" : "OFF");
         client.publish("esp32rm/r2/stat", statusR2 ? "ON" : "OFF");
@@ -102,13 +104,13 @@ void setup() {
     WiFi.mode(WIFI_AP_STA); 
     setup_wifi(); 
     
-    // Aktifkan WiFi AP untuk si Bapuk
-    WiFi.softAP("Server_Bapuk", "bapuk123"); 
-    Serial.println("AP Aktif: Server_Bapuk");
+    // AP for Local Connection (Si Bapuk)
+    WiFi.softAP("Server_Bapuk_AP", "bapuk123"); 
+    Serial.println("AP Active: Server_Bapuk_AP");
 
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer); 
     
-    client.setServer(mqttServer, mqttPort);
+    client.setServer(MQTT_SERVER, MQTT_PORT);
     client.setCallback(callback);
     setupButton();
     Serial2.begin(9600, SERIAL_8N1, 16, 17);
@@ -120,7 +122,7 @@ void loop() {
         client.loop();
     }
     
-    checkButton(); // Tombol sekarang dipanggil lebih lancar karena nggak ada blocking panjang
+    checkButton(); 
 
     if (energyResetRequested) {
         pzem.resetEnergy();
@@ -140,6 +142,7 @@ void loop() {
     if (currentMillis - previousMillis >= 3000) {
         previousMillis = currentMillis;
         
+        // Sensor Reading logic...
         float v = pzem.voltage(); float c = pzem.current();
         float p = pzem.power(); float e = pzem.energy();
         lastVoltageAC = isnan(v) ? 0 : v; lastCurrentAC = isnan(c) ? 0 : c;
@@ -162,36 +165,24 @@ void loop() {
         char buffer[256];
         serializeJson(doc, buffer);
 
-        // 1. Kirim ke Cloud (MQTT)
+        // 1. Cloud Sync
         if (client.connected()) {
             client.publish("esp32rm/sensor", buffer);
         }
 
-        // 2. Kirim ke si Bapuk (Lokal via HTTP POST) - ANTI LAGGING
+        // 2. Local Server Sync (Si Bapuk)
         if (WiFi.softAPgetStationNum() > 0) { 
             WiFiClient clientLokal;
             HTTPClient http;
-            
-            // Timeout pendek 150ms biar loop tetep jalan kenceng
             http.setTimeout(150); 
-            
-            // PENTING: Pake IP lokal si Bapuk (biasanya 192.168.4.2)
-            // Bukan IP Tailscale biar gak nyangkut di internet yang lemot
-            http.begin(clientLokal, "http://192.168.4.2:5000/data"); 
+            http.begin(clientLokal, LOCAL_SERVER_URL); 
             http.addHeader("Content-Type", "application/json");
             
             int httpCode = http.POST(buffer); 
-            if(httpCode < 0) Serial.println("Lokal Post Timeout/Error");
-            
+            if(httpCode < 0) Serial.println("Local Sync Failed");
             http.end();
         }
         
-        perluUpdateLCD = true;
-    }
-
-    static unsigned long lastSec = 0;
-    if (!isMenuMode && (displayMode == 2 || displayMode == 4) && millis() - lastSec > 1000) {
-        lastSec = millis();
         perluUpdateLCD = true;
     }
 
