@@ -61,7 +61,7 @@ Manage the entire system using **just one button**.
 # 🖥️ Server-Side (Si Bapuk) & Visualization
 
 This project includes a Python-based local server to handle high-frequency data logging and visualization.
-![Grafana Dashboard](images/grafana_dashboard.png)
+![Grafana](images/grafana_dashboard.png)
 
 ### 1. Local Server (`server_bapuk.py`)
 A Flask-based gateway that receives data from ESP32 and performs:
