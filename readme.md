@@ -117,6 +117,7 @@ const char* mqttPass   = "YOUR_MQTT_PASSWORD";
 # 📂 Project Structure
 ```.
 ├── src/main.cpp            # Main firmware logic
+├── images/
 ├── include/                # Modular headers (.h)
 ├── server/
 │   ├── server_bapuk.py     # Flask Server for InfluxDB
