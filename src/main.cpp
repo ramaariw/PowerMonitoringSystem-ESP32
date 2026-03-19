@@ -90,57 +90,67 @@ String getUptime() {
 
 // --- MQTT Callback ---
 void callback(char* topic, byte* payload, unsigned int len) {
+    if (len == 0) return; // Proteksi payload kosong
+
     String msg = "";
     for (int i = 0; i < len; i++) msg += (char)payload[i];
     String t = String(topic);
 
-    // 1. COMMAND CONTROL (Manual Switch)
+    // 1. MANUAL COMMAND
     if (t == "esp32rm/r1/cmd") {
         statusR1 = (msg == "ON");
         digitalWrite(4, statusR1 ? LOW : HIGH);
-        timerR1Active = false; // Batalin timer kalo dipencet manual
-        scheduleR1 = "";       // Batalin jadwal kalo dipencet manual
-    } else if (t == "esp32rm/r2/cmd") {
+        // Jika dinyalain manual, matikan sisa timer/jadwal biar gak bingung
+        timerR1Active = false;
+        scheduleR1 = ""; 
+    } 
+    else if (t == "esp32rm/r2/cmd") {
         statusR2 = (msg == "ON");
         digitalWrite(2, statusR2 ? LOW : HIGH);
         timerR2Active = false;
         scheduleR2 = "";
     }
     
-    // 2. TIMER CONTROL (Terima Menit dari Flutter)
+    // 2. TIMER (Payload dalam MENIT)
     else if (t == "esp32rm/r1/timer") {
         long mins = msg.toInt();
         if (mins > 0) {
+            mins = constrain(mins, 1, 1440); // Max 24 jam biar aman
             timerStartR1 = millis();
-            timerDurationR1 = mins * 60000; // Convert menit ke milidetik
+            timerDurationR1 = (unsigned long)mins * 60000;
             timerR1Active = true;
+            Serial.printf("Timer R1 Set: %ld min\n", mins);
         } else {
             timerR1Active = false;
         }
-    } else if (t == "esp32rm/r2/timer") {
+    } 
+    else if (t == "esp32rm/r2/timer") {
         long mins = msg.toInt();
         if (mins > 0) {
+            mins = constrain(mins, 1, 1440);
             timerStartR2 = millis();
-            timerDurationR2 = mins * 60000;
+            timerDurationR2 = (unsigned long)mins * 60000;
             timerR2Active = true;
+            Serial.printf("Timer R2 Set: %ld min\n", mins);
         } else {
             timerR2Active = false;
         }
     }
 
-    // 3. SCHEDULE CONTROL (Terima Jam dari Flutter, ex: "22:30")
+    // 3. SCHEDULE (Payload format "HH:MM")
     else if (t == "esp32rm/r1/schedule") {
-        scheduleR1 = (msg == "OFF" || msg == "") ? "" : msg;
-    } else if (t == "esp32rm/r2/schedule") {
-        scheduleR2 = (msg == "OFF" || msg == "") ? "" : msg;
+        if (msg == "OFF" || msg.length() < 5) scheduleR1 = "";
+        else scheduleR1 = msg;
+    } 
+    else if (t == "esp32rm/r2/schedule") {
+        if (msg == "OFF" || msg.length() < 5) scheduleR2 = "";
+        else scheduleR2 = msg;
     }
     
-    // Sync status back to dashboard (Hanya publish stat kalo ada command manual)
-    if (t.endsWith("/cmd")) {
-        if (client.connected()) {
-            client.publish("esp32rm/r1/stat", statusR1 ? "ON" : "OFF");
-            client.publish("esp32rm/r2/stat", statusR2 ? "ON" : "OFF");
-        }
+    // Publish balik status ke Flutter biar UI gak 'mental' (ghosting)
+    if (client.connected()) {
+        client.publish("esp32rm/r1/stat", statusR1 ? "ON" : "OFF");
+        client.publish("esp32rm/r2/stat", statusR2 ? "ON" : "OFF");
     }
     perluUpdateLCD = true;
 }
