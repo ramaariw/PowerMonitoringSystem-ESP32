@@ -89,6 +89,10 @@ inline void keepConnected() {
             if (client.connect("ESP32_PMSv1.1_Client", mqttUser, mqttPass)) {
                 client.subscribe("esp32rm/r1/cmd");
                 client.subscribe("esp32rm/r2/cmd");
+                client.subscribe("esp32rm/r1/timer");
+                client.subscribe("esp32rm/r2/timer");
+                client.subscribe("esp32rm/r1/schedule");
+                client.subscribe("esp32rm/r2/schedule");
                 Serial.println("MQTT Connected & Subscribed!");
             }
         }
