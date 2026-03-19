@@ -25,6 +25,17 @@ unsigned long lastWifiRetry = 0;
 bool statusR1 = false;
 bool statusR2 = false;
 
+// === VARIABLE TIMER & SCHEDULER (NEW V1.3) ===
+unsigned long timerStartR1 = 0, timerDurationR1 = 0;
+bool timerR1Active = false;
+
+unsigned long timerStartR2 = 0, timerDurationR2 = 0;
+bool timerR2Active = false;
+
+String scheduleR1 = ""; // Format: "HH:MM"
+String scheduleR2 = ""; // Format: "HH:MM"
+// ==============================================
+
 PZEM004Tv30 pzem(Serial2, 16, 17);
 WiFiClientSecure espClient;
 PubSubClient client(espClient);
@@ -45,6 +56,15 @@ String getClock() {
     if(!getLocalTime(&timeinfo)) return "00:00:00";
     char buffer[10];
     strftime(buffer, sizeof(buffer), "%H:%M:%S", &timeinfo);
+    return String(buffer);
+}
+
+// Helper baru buat Scheduler (Biar gampang dicompare misal "22:30")
+String getShortClock() {
+    struct tm timeinfo;
+    if(!getLocalTime(&timeinfo)) return "00:00";
+    char buffer[6];
+    strftime(buffer, sizeof(buffer), "%H:%M", &timeinfo);
     return String(buffer);
 }
 
@@ -74,18 +94,53 @@ void callback(char* topic, byte* payload, unsigned int len) {
     for (int i = 0; i < len; i++) msg += (char)payload[i];
     String t = String(topic);
 
+    // 1. COMMAND CONTROL (Manual Switch)
     if (t == "esp32rm/r1/cmd") {
         statusR1 = (msg == "ON");
         digitalWrite(4, statusR1 ? LOW : HIGH);
+        timerR1Active = false; // Batalin timer kalo dipencet manual
+        scheduleR1 = "";       // Batalin jadwal kalo dipencet manual
     } else if (t == "esp32rm/r2/cmd") {
         statusR2 = (msg == "ON");
         digitalWrite(2, statusR2 ? LOW : HIGH);
+        timerR2Active = false;
+        scheduleR2 = "";
     }
     
-    // Sync status back to dashboard
-    if (client.connected()) {
-        client.publish("esp32rm/r1/stat", statusR1 ? "ON" : "OFF");
-        client.publish("esp32rm/r2/stat", statusR2 ? "ON" : "OFF");
+    // 2. TIMER CONTROL (Terima Menit dari Flutter)
+    else if (t == "esp32rm/r1/timer") {
+        long mins = msg.toInt();
+        if (mins > 0) {
+            timerStartR1 = millis();
+            timerDurationR1 = mins * 60000; // Convert menit ke milidetik
+            timerR1Active = true;
+        } else {
+            timerR1Active = false;
+        }
+    } else if (t == "esp32rm/r2/timer") {
+        long mins = msg.toInt();
+        if (mins > 0) {
+            timerStartR2 = millis();
+            timerDurationR2 = mins * 60000;
+            timerR2Active = true;
+        } else {
+            timerR2Active = false;
+        }
+    }
+
+    // 3. SCHEDULE CONTROL (Terima Jam dari Flutter, ex: "22:30")
+    else if (t == "esp32rm/r1/schedule") {
+        scheduleR1 = (msg == "OFF" || msg == "") ? "" : msg;
+    } else if (t == "esp32rm/r2/schedule") {
+        scheduleR2 = (msg == "OFF" || msg == "") ? "" : msg;
+    }
+    
+    // Sync status back to dashboard (Hanya publish stat kalo ada command manual)
+    if (t.endsWith("/cmd")) {
+        if (client.connected()) {
+            client.publish("esp32rm/r1/stat", statusR1 ? "ON" : "OFF");
+            client.publish("esp32rm/r2/stat", statusR2 ? "ON" : "OFF");
+        }
     }
     perluUpdateLCD = true;
 }
@@ -97,7 +152,7 @@ void setup() {
     pinMode(2, OUTPUT); digitalWrite(2, HIGH);
     
     lcd.init(); lcd.backlight();
-    tampilkanIntroLCD("PMS V1.1 by AME");
+    tampilkanIntroLCD("PMS V1.3 by AME"); // Naik Versi Cuy!
 
     WiFi.mode(WIFI_AP_STA); 
     setup_wifi(); 
@@ -136,11 +191,55 @@ void loop() {
         perluUpdateLCD = true;
     }
 
+    // =========================================================
+    // EKSEKUSI TIMER MILLIS (Berjalan Non-Stop / Non-Blocking)
+    // =========================================================
     unsigned long currentMillis = millis();
+
+    // Cek Timer Relay 1
+    if (timerR1Active && (currentMillis - timerStartR1 >= timerDurationR1)) {
+        statusR1 = false;
+        digitalWrite(4, HIGH); // Matiin Relay
+        timerR1Active = false; // Reset Timer
+        if (client.connected()) client.publish("esp32rm/r1/stat", "OFF");
+        perluUpdateLCD = true;
+    }
+
+    // Cek Timer Relay 2
+    if (timerR2Active && (currentMillis - timerStartR2 >= timerDurationR2)) {
+        statusR2 = false;
+        digitalWrite(2, HIGH); // Matiin Relay
+        timerR2Active = false; // Reset Timer
+        if (client.connected()) client.publish("esp32rm/r2/stat", "OFF");
+        perluUpdateLCD = true;
+    }
+
+    // =========================================================
+    // EKSEKUSI PEMBACAAN SENSOR & SCHEDULER (Tiap 3 Detik)
+    // =========================================================
     if (currentMillis - previousMillis >= 3000) {
         previousMillis = currentMillis;
         
-        // Sensor Reading logic...
+        // --- Eksekusi Scheduler (Biar gaperlu cek tiap milidetik) ---
+        String currentHHMM = getShortClock();
+        
+        if (scheduleR1 != "" && currentHHMM == scheduleR1) {
+            statusR1 = false;
+            digitalWrite(4, HIGH);
+            scheduleR1 = ""; // Clear jadwal biar gak kepanggil terus sampe menitnya ganti
+            if (client.connected()) client.publish("esp32rm/r1/stat", "OFF");
+            perluUpdateLCD = true;
+        }
+
+        if (scheduleR2 != "" && currentHHMM == scheduleR2) {
+            statusR2 = false;
+            digitalWrite(2, HIGH);
+            scheduleR2 = ""; 
+            if (client.connected()) client.publish("esp32rm/r2/stat", "OFF");
+            perluUpdateLCD = true;
+        }
+
+        // --- Sensor Reading logic ---
         float v = pzem.voltage(); float c = pzem.current();
         float p = pzem.power(); float e = pzem.energy();
         lastVoltageAC = isnan(v) ? 0 : v; lastCurrentAC = isnan(c) ? 0 : c;
@@ -159,8 +258,14 @@ void loop() {
         doc["bat"]  = PersenBaterai;
         doc["time"] = getClock();
         doc["uptime"] = getUptime();
+        
+        // (Optional) Kirim sisa waktu ke Flutter biar bisa update UI
+        doc["t1_rem"] = timerR1Active ? ((timerDurationR1 - (currentMillis - timerStartR1)) / 1000) : 0;
+        doc["t2_rem"] = timerR2Active ? ((timerDurationR2 - (currentMillis - timerStartR2)) / 1000) : 0;
+        doc["sch_1"] = scheduleR1;
+        doc["sch_2"] = scheduleR2;
 
-        char buffer[256];
+        char buffer[350]; // Dibesarin dikit buffernya krn JSON nambah
         serializeJson(doc, buffer);
 
         // 1. Cloud Sync
