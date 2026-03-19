@@ -57,7 +57,7 @@ inline void tampilkanMenu(int index) {
 inline void tampilkanIntroLCD(const char* msg) {
     lcd.clear();
     lcd.setCursor(0, 0);
-    lcd.print("PMS V1.1 - AME");
+    lcd.print("PMS V1.2 - AME");
     lcd.setCursor(0, 1);
     lcd.print(msg);
 }
