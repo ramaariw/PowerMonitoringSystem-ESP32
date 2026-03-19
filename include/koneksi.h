@@ -13,9 +13,9 @@ extern PubSubClient client;
 extern bool configWiFiRequested; 
 
 // --- MQTT Configuration (PLEASE FILL BEFORE UPLOADING) ---
-const char* mqttServer = "YOUR_MQTT_URL";
-const char* mqttUser   = "YOUR_MQTT_USERNAME"; 
-const char* mqttPass   = "YOUR_MQTT_PASSWORD";
+const char* mqttServer = "c3a71c8ed6244283a52bcf948e798390.s1.eu.hivemq.cloud";
+const char* mqttUser   = "rama_ame69"; 
+const char* mqttPass   = "Ramaariwahyudi_27";
 const int mqttPort     = 8883;
 
 // Connection Watchdog Timers
