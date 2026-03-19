@@ -61,7 +61,7 @@ Manage the entire system using **just one button**.
 # 🖥️ Server-Side (Si Bapuk) & Visualization
 
 This project includes a Python-based local server to handle high-frequency data logging and visualization.
-![Grafana](images/grafana_dashboard.png)
+
 
 ### 1. Local Server (`server_bapuk.py`)
 A Flask-based gateway that receives data from ESP32 and performs:
@@ -75,6 +75,7 @@ python server/server_bapuk.py
 ```
 ### 2. Grafana Dashboard
 A pre-configured dashboard (grafana_dashboard_pms.json) is provided.
+![Grafana](images/grafana_dashboard.png)
 - Visuals: Gauges for Voltage, Power usage charts, and System status.
 - Cost Calculator: Real-time electricity bill estimation based on IDR rates.
 - Time Sync: Built-in Flux query to handle WIB (GMT+7) time shifts.

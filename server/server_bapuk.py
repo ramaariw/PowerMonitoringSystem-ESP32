@@ -13,7 +13,7 @@ LOG_FILE = "pms_data_log.csv"
 INFLUX_URL = "http://localhost:8086"
 INFLUX_TOKEN = "YOUR_INFLUXDB_TOKEN"
 INFLUX_ORG = "YOUR_ORG"
-INFLUX_BUCKET = "PMS_Data"
+INFLUX_BUCKET = "YOUR_BUCKET"
 
 # Initialize InfluxDB Client
 client_influx = InfluxDBClient(url=INFLUX_URL, token=INFLUX_TOKEN, org=INFLUX_ORG)
