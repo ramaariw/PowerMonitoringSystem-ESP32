@@ -200,7 +200,7 @@ void setup() {
 
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer); 
     
-    client.setServer(MQTT_SERVER, MQTT_PORT);
+    client.setServer(mqttServer, mqttPort);
     client.setCallback(callback);
     setupButton();
     Serial2.begin(9600, SERIAL_8N1, 16, 17);
@@ -315,7 +315,9 @@ void loop() {
             WiFiClient clientLokal;
             HTTPClient http;
             http.setTimeout(150); 
-            http.begin(clientLokal, LOCAL_SERVER_URL); 
+            String serverUrl = "http://192.168.4.2:5000/data"; 
+    
+            http.begin(clientLokal, serverUrl); // <--- UDAH DIBENERIN
             http.addHeader("Content-Type", "application/json");
             
             int httpCode = http.POST(buffer); 
