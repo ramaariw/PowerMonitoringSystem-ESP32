@@ -7,6 +7,7 @@
 #include <LiquidCrystal_I2C.h>
 #include <time.h> 
 #include <ArduinoJson.h>
+#include <ArduinoOTA.h>
 #include "koneksi.h"
 #include "lcd_display.h"
 #include "tombol.h"
@@ -25,7 +26,7 @@ unsigned long lastWifiRetry = 0;
 bool statusR1 = false;
 bool statusR2 = false;
 
-// === VARIABLE TIMER & SCHEDULER (NEW V1.3) ===
+// === VARIABLE TIMER & SCHEDULER (NEW V1.2) ===
 unsigned long timerStartR1 = 0, timerDurationR1 = 0;
 bool timerR1Active = false;
 
@@ -86,6 +87,32 @@ String getUptime() {
     if (days > 0) snprintf(buffer, sizeof(buffer), "%dd %02d:%02d:%02d", days, hours, minutes, seconds);
     else snprintf(buffer, sizeof(buffer), "%02d:%02d:%02d", hours, minutes, seconds);
     return String(buffer);
+}
+
+// --- OTA SETUP ---
+void setup_ota() {
+    ArduinoOTA.setHostname("pms-ota");
+    ArduinoOTA.setPassword("bapuk123"); // Password biar aman pas update
+
+    ArduinoOTA.onStart([]() {
+        lcd.clear();
+        lcd.print("OTA UPDATING...");
+    });
+    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+        lcd.setCursor(0, 1);
+        lcd.print("Progress: ");
+        lcd.print(progress / (total / 100));
+        lcd.print("%");
+    });
+    ArduinoOTA.onEnd([]() {
+        lcd.clear();
+        lcd.print("UPDATE SUCCESS!");
+    });
+    ArduinoOTA.onError([](ota_error_t error) {
+        lcd.clear();
+        lcd.print("UPDATE FAILED!");
+    });
+    ArduinoOTA.begin();
 }
 
 // --- MQTT Callback ---
