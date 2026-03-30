@@ -198,6 +198,8 @@ void setup() {
     WiFi.softAP("Server_Bapuk_AP", "bapuk123"); 
     Serial.println("AP Active: Server_Bapuk_AP");
 
+    setup_ota();
+
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer); 
     
     client.setServer(mqttServer, mqttPort);
@@ -207,6 +209,8 @@ void setup() {
 }
 
 void loop() {
+    ArduinoOTA.handle();
+
     if (!configWiFiRequested) {
         keepConnected();
         client.loop();
