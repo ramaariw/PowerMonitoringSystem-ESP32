@@ -7,3 +7,4 @@
 *.bin
 *.elf
 .include/config.h
+.mobile_apps

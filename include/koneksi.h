@@ -24,26 +24,35 @@ extern unsigned long lastWifiRetry;
 const unsigned long retryInterval = 5000; 
 
 // --- Initial Startup Function ---
+// --- Update di koneksi.h ---
 inline void setup_wifi() {
-    WiFiManager wm;
+    // 1. Set mode biar bisa nyambung ke router + jadi AP buat Server Bapuk
+    WiFi.mode(WIFI_AP_STA); 
     
-    // Set portal timeout (if triggered via menu)
-    wm.setConfigPortalTimeout(120); 
+    // 2. Langsung suruh konek ke WiFi yang terakhir tersimpan (Non-Blocking)
+    WiFi.begin(); 
     
-    Serial.println("Attempting auto-connect to stored WiFi...");
+    Serial.println("Connecting to stored WiFi in background...");
     tampilkanIntroLCD("Connecting...");
-
-    // Try to connect using stored credentials
-    if (!wm.autoConnect("PMS-V1.1-Setup")) {
-        Serial.println("Connection Failed/Timeout. Entering Offline Mode.");
-        tampilkanIntroLCD("Offline Mode");
-    } else {
-        Serial.println("WiFi Connected!");
-        tampilkanIntroLCD("WiFi Connected");
-    }
     
+    // Kita kasih delay dikit aja buat update LCD, sisanya biar loop yang urus
+    delay(1000); 
+
     espClient.setInsecure(); 
-    delay(1000);
+}
+
+// Tambahin fungsi baru ini di koneksi.h buat handle timeout pas pertama nyala
+inline void checkInitialConnection() {
+    static bool firstCheckDone = false;
+    if (!firstCheckDone && millis() > 15000) { // Cek setelah 15 detik pertama
+        if (WiFi.status() != WL_CONNECTED) {
+            Serial.println("Initial WiFi Failed. Continuing in Offline Mode.");
+            tampilkanIntroLCD("Offline Mode");
+            delay(1000);
+            perluUpdateLCD = true;
+        }
+        firstCheckDone = true;
+    }
 }
 
 // --- Portal Trigger Function (Triggered from Settings Menu) ---

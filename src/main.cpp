@@ -212,7 +212,9 @@ void loop() {
     ArduinoOTA.handle();
 
     if (!configWiFiRequested) {
-        keepConnected();
+        keepConnected(); 
+        // Panggil helper biar status LCD berubah kalau gagal konek di awal
+        checkInitialConnection(); 
         client.loop();
     }
     
