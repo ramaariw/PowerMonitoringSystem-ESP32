@@ -10,6 +10,7 @@ extern int menuIndex;
 extern bool isMenuMode; 
 extern bool perluUpdateLCD;
 extern bool statusR1, statusR2;
+extern bool otaModeActive;
 
 inline void printLine(int row, const char* format, ...) {
     char buffer[17];
@@ -49,9 +50,10 @@ inline void tampilkanLCD(float vAC, float cAC, float pAC, float eAC,
 
 inline void tampilkanMenu(int index) {
     printLine(0, "--- SETTINGS ---");
-    if (index == 1) printLine(1, "> RESET ENERGY  ");
+    if (index == 1)      printLine(1, "> RESET ENERGY  ");
     else if (index == 2) printLine(1, "> CONFIG WIFI   ");
-    else if (index == 3) printLine(1, "> EXIT MENU     ");
+    else if (index == 3) printLine(1, "> START OTA     "); // Menu baru
+    else if (index == 4) printLine(1, "> EXIT MENU     ");
 }
 
 inline void tampilkanIntroLCD(const char* msg) {
