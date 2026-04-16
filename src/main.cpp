@@ -321,7 +321,7 @@ void loop() {
             WiFiClient clientLokal;
             HTTPClient http;
             http.setTimeout(150); 
-            String serverUrl = "http://192.168.4.2:5000/data"; 
+            String serverUrl = "http://192.168.1.33:5000/data"; 
     
             http.begin(clientLokal, serverUrl); // <--- UDAH DIBENERIN
             http.addHeader("Content-Type", "application/json");
