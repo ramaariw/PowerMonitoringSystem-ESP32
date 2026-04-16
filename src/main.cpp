@@ -20,6 +20,9 @@ bool perluUpdateLCD = true;
 bool energyResetRequested = false;
 bool configWiFiRequested = false; 
 
+unsigned long lastWifiRetry = 0;
+unsigned long lastMqttRetry = 0;
+
 bool statusR1 = false;
 bool statusR2 = false;
 
