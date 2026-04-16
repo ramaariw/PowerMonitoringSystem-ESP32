@@ -88,7 +88,7 @@ String getUptime() {
     return String(buffer);
 }
 
-// --- MQTT Callback (DITARUH DI ATAS SETUP BIAR GAK ERROR UNDEFINED) ---
+// --- MQTT Callback ---
 void callback(char* topic, byte* payload, unsigned int len) {
     if (len == 0) return;
     String msg = "";
@@ -121,12 +121,6 @@ void callback(char* topic, byte* payload, unsigned int len) {
             timerR2Active = true;
         } else { timerR2Active = false; }
     }
-    else if (t == "esp32rm/r1/schedule") {
-        scheduleR1 = (msg == "OFF" || msg.length() < 5) ? "" : msg;
-    } 
-    else if (t == "esp32rm/r2/schedule") {
-        scheduleR2 = (msg == "OFF" || msg.length() < 5) ? "" : msg;
-    }
     
     if (client.connected()) {
         client.publish("esp32rm/r1/stat", statusR1 ? "ON" : "OFF");
@@ -149,41 +143,41 @@ void setup() {
     pinMode(2, OUTPUT); digitalWrite(2, HIGH);
     
     lcd.init(); lcd.backlight();
-    tampilkanIntroLCD("PMS V1.4 EXTREME");
+    tampilkanIntroLCD("PMS V1.4 STABLE");
 
     setup_wifi(); 
-    WiFi.softAP("Server_Bapuk_AP", "bapuk123"); 
 
     setup_ota();
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer); 
     
     client.setServer(mqttServer, mqttPort);
-    client.setCallback(callback); // SEKARANG PASTI KENAL SAMA CALLBACK
+    client.setCallback(callback);
     setupButton();
     Serial2.begin(9600, SERIAL_8N1, 16, 17);
 }
 
 void loop() {
-    ArduinoOTA.handle();
+    // --- 1. PRIORITAS UTAMA: TOMBOL & OTA ---
+    // Harus dipanggil tiap milidetik tanpa penghalang!
     checkButton(); 
+    ArduinoOTA.handle();
 
-    if (otaModeActive) {
-        static unsigned long lastOtaLCD = 0;
-        if (millis() - lastOtaLCD > 1000) {
-            lastOtaLCD = millis();
-            lcd.clear();
-            lcd.print("OTA MODE ACTIVE");
-            lcd.setCursor(0, 1);
-            lcd.print("WAITING FILE...");
+    unsigned long currentMillis = millis();
+
+    // --- 2. LOGIC KONEKSI (KITA BATASI BANGET) ---
+    // Biar gak ganggu tombol pas WiFi lagi bapuk/nyari sinyal
+    static unsigned long lastNetUpdate = 0;
+    if (currentMillis - lastNetUpdate > 2000) { 
+        if (!configWiFiRequested && !otaModeActive) {
+            keepConnected(); // Pake versi gentle reconnect (jeda 30 detik)
+            if (WiFi.status() == WL_CONNECTED) {
+                client.loop();
+            }
         }
-        return; 
+        lastNetUpdate = currentMillis;
     }
 
-    if (!configWiFiRequested) {
-        keepConnected(); 
-        client.loop();
-    }
-
+    // --- 3. LOGIC SETTING & RESET (Nyontek V1.1) ---
     if (energyResetRequested) {
         pzem.resetEnergy();
         tampilkanIntroLCD("ENERGY CLEARED!");
@@ -198,61 +192,63 @@ void loop() {
         perluUpdateLCD = true;
     }
 
-    unsigned long currentMillis = millis();
+    // --- 4. OTA MODE PROTEKSI ---
+    if (otaModeActive) {
+        static unsigned long lastOtaLCD = 0;
+        if (currentMillis - lastOtaLCD > 1000) {
+            lastOtaLCD = currentMillis;
+            lcd.clear();
+            lcd.print("OTA MODE ACTIVE");
+            lcd.setCursor(0, 1);
+            lcd.print("WAITING FILE...");
+        }
+        return; // Berhenti di sini kalau lagi update OTA
+    }
 
+    // --- 5. TIMER RELAY LOGIC (V1.4) ---
     if (timerR1Active && (currentMillis - timerStartR1 >= timerDurationR1)) {
         statusR1 = false; digitalWrite(4, HIGH);
-        timerR1Active = false;
-        if (client.connected()) client.publish("esp32rm/r1/stat", "OFF");
-        perluUpdateLCD = true;
+        timerR1Active = false; perluUpdateLCD = true;
+        if (WiFi.status() == WL_CONNECTED && client.connected()) client.publish("esp32rm/r1/stat", "OFF");
     }
     if (timerR2Active && (currentMillis - timerStartR2 >= timerDurationR2)) {
         statusR2 = false; digitalWrite(2, HIGH);
-        timerR2Active = false;
-        if (client.connected()) client.publish("esp32rm/r2/stat", "OFF");
-        perluUpdateLCD = true;
+        timerR2Active = false; perluUpdateLCD = true;
+        if (WiFi.status() == WL_CONNECTED && client.connected()) client.publish("esp32rm/r2/stat", "OFF");
     }
 
+    // --- 6. PEMBACAAN SENSOR (Tiap 3 Detik) ---
     if (currentMillis - previousMillis >= 3000) {
         previousMillis = currentMillis;
         
-        String currentHHMM = getShortClock();
-        if (scheduleR1 != "" && currentHHMM == scheduleR1) {
-            statusR1 = false; digitalWrite(4, HIGH);
-            scheduleR1 = ""; if (client.connected()) client.publish("esp32rm/r1/stat", "OFF");
-            perluUpdateLCD = true;
-        }
-        if (scheduleR2 != "" && currentHHMM == scheduleR2) {
-            statusR2 = false; digitalWrite(2, HIGH);
-            scheduleR2 = ""; if (client.connected()) client.publish("esp32rm/r2/stat", "OFF");
-            perluUpdateLCD = true;
-        }
-
+        // Baca PZEM (Tambahkan pengecekan nan biar gak crash)
         float v = pzem.voltage(); float c = pzem.current();
         float p = pzem.power(); float e = pzem.energy();
         lastVoltageAC = isnan(v) ? 0 : v; lastCurrentAC = isnan(c) ? 0 : c;
         lastPowerAC = isnan(p) ? 0 : p; lastEnergyAC = isnan(e) ? 0 : e;
 
+        // Baca DC (Baterai)
         int adc = analogRead(34);
         lastVoltageDC = (adc / 4095.0) * 3.3 * 5.0; 
         PersenBaterai = constrain(((lastVoltageDC - 10.5) / (12.7 - 10.5)) * 100.0, 0, 100);
 
-        JsonDocument doc;
-        doc["v_ac"] = lastVoltageAC; doc["a_ac"] = lastCurrentAC;
-        doc["w_ac"] = lastPowerAC; doc["e_ac"] = lastEnergyAC;
-        doc["v_dc"] = lastVoltageDC; doc["bat"] = PersenBaterai;
-        doc["time"] = getClock(); doc["uptime"] = getUptime();
+        // SYNC DATA HANYA JIKA WIFI CONNECTED
+        if (WiFi.status() == WL_CONNECTED) { 
+            JsonDocument doc;
+            doc["v_ac"] = lastVoltageAC; doc["a_ac"] = lastCurrentAC;
+            doc["w_ac"] = lastPowerAC; doc["e_ac"] = lastEnergyAC;
+            doc["v_dc"] = lastVoltageDC; doc["bat"] = PersenBaterai;
+            doc["time"] = getClock(); doc["uptime"] = getUptime();
 
-        char buffer[380];
-        serializeJson(doc, buffer);
+            char buffer[384];
+            serializeJson(doc, buffer);
 
-        if (client.connected()) client.publish("esp32rm/sensor", buffer);
+            if (client.connected()) client.publish("esp32rm/sensor", buffer);
 
-        if (WiFi.softAPgetStationNum() > 0) { 
             WiFiClient clientLokal;
             HTTPClient http;
-            http.setTimeout(200); 
-            if(http.begin(clientLokal, "http://192.168.4.2:5000/data")) {
+            http.setTimeout(80); 
+            if(http.begin(clientLokal, "http://bapuk-server.local:5000/data")) {
                 http.addHeader("Content-Type", "application/json");
                 http.POST(buffer);
                 http.end();
@@ -261,10 +257,12 @@ void loop() {
         perluUpdateLCD = true;
     }
 
+    // --- 7. UPDATE LCD ---
     if (perluUpdateLCD) {
         if (isMenuMode) {
             tampilkanMenu(menuIndex);
-        } else {
+        } else if (!configWiFiRequested) {
+            // Ambil fungsi tampilan dari lcd_display.h
             tampilkanLCD(lastVoltageAC, lastCurrentAC, lastPowerAC, lastEnergyAC, 
                          lastVoltageDC, PersenBaterai, getClock(), getDate(), getUptime());
         }

@@ -21,16 +21,22 @@ inline void setupButton() {
 }
 
 inline void checkButton() {
-    static bool confirmedState = HIGH, lastReading = HIGH;
-    static unsigned long lastDebounceTime = 0, pressStartTime = 0;
+    static bool confirmedState = HIGH;
+    static bool lastReading = HIGH;
+    static unsigned long lastDebounceTime = 0;
+    static unsigned long pressStartTime = 0;
     static bool longPressHandled = false;
     static int clickCount = 0;
     static unsigned long lastClickTime = 0;
     
     bool reading = digitalRead(BUTTON_PIN);
-    if (reading != lastReading) lastDebounceTime = millis();
 
-    if ((millis() - lastDebounceTime) > 50) {
+    // 1. Debounce (Gaya V1.1 yang stabil)
+    if (reading != lastReading) {
+        lastDebounceTime = millis();
+    }
+
+    if ((millis() - lastDebounceTime) > 30) { // Kita turunin ke 30ms biar lebih "klik"
         if (reading != confirmedState) {
             confirmedState = reading;
             if (confirmedState == LOW) { 
@@ -45,38 +51,48 @@ inline void checkButton() {
             }
         }
 
-        // Long Press (3s)
-        if (confirmedState == LOW && !longPressHandled && (millis() - pressStartTime > 3000)) {
-            if (!isMenuMode) {
-                isMenuMode = true; menuIndex = 1;
-            } else {
-                if (menuIndex == 1) energyResetRequested = true;
-                else if (menuIndex == 2) configWiFiRequested = true;
-                else if (menuIndex == 3) otaModeActive = true;
-                else if (menuIndex == 4) isMenuMode = false;
-                if (menuIndex != 4) isMenuMode = false; // Exit after action
+        // 2. LONG PRESS (Tetap 3 Detik)
+        if (confirmedState == LOW && !longPressHandled) {
+            if (millis() - pressStartTime > 3000) {
+                if (!isMenuMode) {
+                    isMenuMode = true; menuIndex = 1;
+                } else {
+                    if (menuIndex == 1) energyResetRequested = true;
+                    else if (menuIndex == 2) configWiFiRequested = true;
+                    else if (menuIndex == 3) isMenuMode = false; 
+                    // Tambahin reset ke false biar keluar menu
+                    isMenuMode = false;
+                }
+                perluUpdateLCD = true;
+                longPressHandled = true;
+                clickCount = 0;
             }
-            perluUpdateLCD = true; longPressHandled = true; clickCount = 0;
         }
     }
 
-    if (clickCount > 0 && (millis() - lastClickTime > 400)) {
+    // 3. EXECUTION (Idle time kita set 350ms - Tengah-tengah antara V1.1 dan V1.4)
+    if (clickCount > 0 && (millis() - lastClickTime > 350)) {
         if (clickCount == 1) { 
             if (isMenuMode) {
-                menuIndex++; if (menuIndex > 4) menuIndex = 1;
+                menuIndex++;
+                if (menuIndex > 3) menuIndex = 1; 
             } else {
-                displayMode++; if (displayMode > 4) displayMode = 0;
+                displayMode++;
+                if (displayMode > 4) displayMode = 0;
             }
         } 
         else if (clickCount == 2) { 
-            statusR1 = !statusR1; digitalWrite(R1_PIN, statusR1 ? LOW : HIGH);
+            statusR1 = !statusR1;
+            digitalWrite(R1_PIN, statusR1 ? LOW : HIGH);
             if(client.connected()) client.publish("esp32rm/r1/stat", statusR1 ? "ON" : "OFF");
         } 
         else if (clickCount == 3) { 
-            statusR2 = !statusR2; digitalWrite(R2_PIN, statusR2 ? LOW : HIGH);
+            statusR2 = !statusR2;
+            digitalWrite(R2_PIN, statusR2 ? LOW : HIGH);
             if(client.connected()) client.publish("esp32rm/r2/stat", statusR2 ? "ON" : "OFF");
         }
-        clickCount = 0; perluUpdateLCD = true;
+        clickCount = 0;
+        perluUpdateLCD = true;
     }
     lastReading = reading;
 }
