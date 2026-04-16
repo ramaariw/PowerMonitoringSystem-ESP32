@@ -10,7 +10,6 @@ extern int menuIndex;
 extern bool isMenuMode; 
 extern bool perluUpdateLCD;
 extern bool statusR1, statusR2;
-extern bool otaModeActive;
 
 inline void printLine(int row, const char* format, ...) {
     char buffer[17];
@@ -34,7 +33,7 @@ inline void tampilkanLCD(float vAC, float cAC, float pAC, float eAC,
         printLine(0, "V:%.1f A:%.3f", vAC, cAC);
         printLine(1, "W:%.1f kWh:%.2f", pAC, eAC);
     } 
-    else if (displayMode == 2) { // Page 3: Time Info
+    else if (displayMode == 2) { // Page 3: Time & Date (Balik Lagi Cuy!)
         printLine(0, "TIME:   %s", clock.c_str());
         printLine(1, "DATE: %s", date.c_str());
     }
@@ -52,14 +51,13 @@ inline void tampilkanMenu(int index) {
     printLine(0, "--- SETTINGS ---");
     if (index == 1)      printLine(1, "> RESET ENERGY  ");
     else if (index == 2) printLine(1, "> CONFIG WIFI   ");
-    else if (index == 3) printLine(1, "> START OTA     "); // Menu baru
-    else if (index == 4) printLine(1, "> EXIT MENU     ");
+    else if (index == 3) printLine(1, "> EXIT MENU     ");
 }
 
 inline void tampilkanIntroLCD(const char* msg) {
     lcd.clear();
     lcd.setCursor(0, 0);
-    lcd.print("PMS V1.2 - AME");
+    lcd.print("PMS V1.3 - AME");
     lcd.setCursor(0, 1);
     lcd.print(msg);
 }
